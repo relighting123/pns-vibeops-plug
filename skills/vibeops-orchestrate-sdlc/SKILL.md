@@ -32,8 +32,7 @@ Start all eligible native agents before waiting for the first report. Use the re
 
 For ticket dispatch configure a trusted local test command as an argument list in
 `dispatch.verify_command` (for example `["python", "-m", "pytest"]` for a pytest
-project). Verification runs it against the assigned target_sha. During verification,
-review and deployment keep the checkout clean and record evidence in the ticket.
+project). Verification runs it against the assigned target_sha. After the design signoff in the issue, the dispatcher pushes the ticket branch and creates a Draft MR. Keep verification and review evidence in that MR. When review completes, a human can merge. Deployment requires the linked MR to be merged and uses its tested merge revision in a separate worktree.
 Deploy the exact target_sha from the assignment using a revision-pinned deployment
 command. If the deployment backend cannot accept or confirm that revision, stop
 and leave the assignment incomplete.
