@@ -4,12 +4,12 @@
 
 ```text
 skills/
-  read-oracle-data/scripts/oracle_client.py
-  modify-oracle-data/scripts/oracle_client.py
-  read-iflow-data/scripts/iflow_client.py
-  modify-iflow-data/scripts/iflow_client.py
-  read-cube-data/scripts/cube_client.py
-  modify-cube-data/scripts/cube_client.py
+  vibeops-read-oracle-data/scripts/oracle_client.py
+  vibeops-modify-oracle-data/scripts/oracle_client.py
+  vibeops-read-iflow-data/scripts/iflow_client.py
+  vibeops-modify-iflow-data/scripts/iflow_client.py
+  vibeops-read-cube-data/scripts/cube_client.py
+  vibeops-modify-cube-data/scripts/cube_client.py
 shared/python/
   http_client/          # HTTPS client·catalog·검증·retry·응답 한도
   oracle_client/        # 연결·조회·DML·CLI
@@ -37,8 +37,8 @@ API 명세가 OpenAPI로 이미 있다면 등록 catalog를 검토해 변환하�
 5. 실제 API에 맞게 method/path/request_schema/effect/response_fields를 등록한다. JSON Schema 2020-12로 path/query/body 전체를 검사한다. examples는 추가 파라미터를 금지한다. optional 값의 default는 schema에서 자동 주입하지 않으며 명시적으로 전달한다.
 
 ```bash
-python /plugin/skills/read-iflow-data/scripts/iflow_client.py --profile iflow-development --request /protected/read.json
-python /plugin/skills/modify-iflow-data/scripts/iflow_client.py --profile iflow-write --request /protected/change.json --apply
+python /plugin/skills/vibeops-read-iflow-data/scripts/iflow_client.py --profile iflow-development --request /protected/read.json
+python /plugin/skills/vibeops-modify-iflow-data/scripts/iflow_client.py --profile iflow-write --request /protected/change.json --apply
 ```
 
 Cube는 대응하는 cube_client.py와 Cube profile을 사용한다. --request -는 stdin을 사용한다. 읽기는 동일 profile 요청 1~10개를 배열로 묶어 같은 HTTP Client/TCP 연결을 재사용한다. 변경은 한 번에 1개만 허용한다. 스크립트 종료 후 연결이 유지되지는 않는다.
@@ -62,12 +62,12 @@ TLS 검증을 끄는 옵션은 없다. 자동 redirect를 막는다. HTTPX의 �
 
 ORACLE_ACCESS_CONFIG에 외부 databases 프로필 경로를 지정한다. 기존 ORACLE_QUERY_CONFIG도 호환 입력으로 받는다. 자격증명은 프로필의 dsn_env/user_env/password_env로 주입한다. 읽기 계정과 변경 계정/profile을 분리하는 것이 권장된다.
 
-읽기는 기존 check/describe/등록 query를 유지한다. 등록 SELECT catalog에는 effect=read가 필요하다. shared/python/oracle_client/query_executor.py가 기존 실행 코드를 제공하며 connections.py로 접속 구현을 분리했다. 조회 규칙·버전별 접속은 read-oracle-data/references를 따른다.
+읽기는 기존 check/describe/등록 query를 유지한다. 등록 SELECT catalog에는 effect=read가 필요하다. shared/python/oracle_client/query_executor.py가 기존 실행 코드를 제공하며 connections.py로 접속 구현을 분리했다. 조회 규칙·버전별 접속은 vibeops-read-oracle-data/references를 따른다.
 
-변경은 modify-oracle-data/assets의 예시로 writes catalog를 등록한다. profile에 allow_write=true, allowed_writes, writes_file 절대 경로를 지정한다. 요청은 operation/binds/expected_rows다.
+변경은 vibeops-modify-oracle-data/assets의 예시로 writes catalog를 등록한다. profile에 allow_write=true, allowed_writes, writes_file 절대 경로를 지정한다. 요청은 operation/binds/expected_rows다.
 
 ```bash
-python /plugin/skills/modify-oracle-data/scripts/oracle_client.py --database write-development --request /protected/change.json --apply
+python /plugin/skills/vibeops-modify-oracle-data/scripts/oracle_client.py --database write-development --request /protected/change.json --apply
 ```
 
 등록된 단일 INSERT/UPDATE/DELETE만 실행한다. DDL/PLSQL/MERGE는 현재 범위에 없다. 바인드 키를 검증하고 실제 rowcount가 expected_rows와 정확히 같을 때 commit한다. 불일치·실행 실패는 rollback한다. rowcount 확인은 실행 뒤 이루어지므로 서버에서 처리한 행 수·스캔량을 미리 제한하지 않는다. 등록 SQL에 키·현재값 조건을 넣어 변경 범위를 한정한다. commit 응답을 잃으면 성공/실패를 추정하지 않고 unknown으로 반환하며 재실행 전에 현재 상태를 확인한다.

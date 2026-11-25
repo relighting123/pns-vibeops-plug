@@ -142,6 +142,6 @@ class ImportTests(unittest.TestCase):
     def test_all_entrypoints_resolve_shared_imports_from_other_directory(self):
         for service in ('oracle','iflow','cube'):
             for action in ('read','modify'):
-                p=ROOT/f'skills/{action}-{service}-data/scripts/{service}_client.py'
+                p=ROOT/f'skills/vibeops-{action}-{service}-data/scripts/{service}_client.py'
                 result=subprocess.run([sys.executable,str(p),'--help'],cwd='/tmp',capture_output=True,text=True,timeout=10)
                 self.assertEqual(result.returncode,0,result.stderr)

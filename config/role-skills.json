@@ -1,46 +1,56 @@
 {
-  "plugin": "sdlc-agent",
+  "plugin": "pns-vibeops-plug",
   "scope": "plugin-skill-exposure-only",
+  "models": {
+    "light": {"claude": "haiku", "codex": "gpt-6-luna", "effort": "low"},
+    "complex": {"claude": "opus", "codex": "gpt-6.2-sol", "effort": "high"}
+  },
   "roles": {
     "requirements": {
-      "name": "sdlc-requirements",
+      "default_tier": "light",
+      "name": "vibeops-requirements",
       "description": "Collect requirements and evidence using ITSM view, iFlow and Cube reads.",
-      "stage": "analyze-requirements",
-      "data_skills": ["quantify-requirements", "read-iflow-data", "read-cube-data"],
+      "stage": "vibeops-analyze-requirements",
+      "data_skills": ["vibeops-quantify-requirements", "vibeops-read-iflow-data", "vibeops-read-cube-data"],
       "tools": ["Read", "Grep", "Glob", "Write", "Bash"]
     },
     "design": {
-      "name": "sdlc-design",
+      "default_tier": "complex",
+      "name": "vibeops-design",
       "description": "Design systems from supplied requirements and evidence.",
-      "stage": "design-system",
+      "stage": "vibeops-design-system",
       "data_skills": [],
       "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
     },
     "develop": {
-      "name": "sdlc-develop",
+      "default_tier": "complex",
+      "name": "vibeops-develop",
       "description": "Implement features using Oracle read evidence when needed.",
-      "stage": "implement-feature",
-      "data_skills": ["read-oracle-data"],
+      "stage": "vibeops-implement-feature",
+      "data_skills": ["vibeops-read-oracle-data"],
       "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
     },
     "test": {
-      "name": "sdlc-test",
+      "default_tier": "light",
+      "name": "vibeops-test",
       "description": "Verify changes using supplied requirements and actual tests.",
-      "stage": "verify-change",
+      "stage": "vibeops-verify-change",
       "data_skills": [],
       "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
     },
     "review": {
-      "name": "sdlc-review",
+      "default_tier": "complex",
+      "name": "vibeops-review",
       "description": "Review supplied changes and evidence without modifying implementation.",
-      "stage": "review-release",
+      "stage": "vibeops-review-release",
       "data_skills": [],
       "tools": ["Read", "Grep", "Glob"]
     },
     "deploy": {
-      "name": "sdlc-deploy",
+      "default_tier": "complex",
+      "name": "vibeops-deploy",
       "description": "Deploy an authorized revision using project deployment instructions.",
-      "stage": "deploy-release",
+      "stage": "vibeops-deploy-release",
       "data_skills": [],
       "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"]
     }

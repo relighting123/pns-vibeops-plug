@@ -13,7 +13,7 @@
 | docs/ | 개발·확장·검증 설명 |
 | tests/ | 구조와 훅 실행 검사 |
 
-실행 흐름: 사용자 요청 → sdlc-orchestrator → 현재 단계 스킬 → 호스트 도구/서브에이전트 → 실제 변경·검사 → 상위 에이전트 검토.
-필요하면 search-wiki로 제한된 근거를 읽고 manage-worktrees로 격리·통합·정리한다.
+실행 흐름: 사용자 요청 → vibeops-orchestrate-sdlc → 현재 단계 스킬 → 호스트 도구/서브에이전트 → 실제 변경·검사 → 상위 에이전트 검토.
+필요하면 vibeops-search-wiki로 제한된 근거를 읽고 vibeops-manage-worktrees로 격리·통합·정리한다.
 
 읽기·변경 스킬과 공통 import 구조는 [공용 데이터 접근](DATA_ACCESS.md), 용어와 이름은 [명명 규칙](NAMING.md)를 따른다.

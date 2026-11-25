@@ -33,13 +33,19 @@ def render(root=ROOT):
             instructions += 'Use supplied external evidence; do not call the plugin data-access clients.\n'
         instructions += ('These instructions and host skill settings do not isolate files, shell commands, '
                          'network access or credentials. Follow actual host and service permissions.\n')
-        yaml = '---\nname: '+role['name']+'\ndescription: '+role['description']+'\ntools: '+', '.join(role['tools'])+'\nskills:\n'
-        yaml += ''.join('  - '+json.dumps(config['plugin']+':'+name)+'\n' for name in selected)
-        yaml += '---\n\n'+instructions
-        output[root/'agents'/f'{key}.md'] = yaml
-        toml = '\n'.join(k+' = '+json.dumps(v) for k,v in {
-            'name':role['name'], 'description':role['description'], 'developer_instructions':instructions}.items())+'\n'
-        output[root/'.codex/agents'/f'{role["name"]}.toml'] = toml
+        for tier, profile in config['models'].items():
+            default = tier == role['default_tier']
+            suffix = '' if default else '-' + tier
+            name = role['name'] + suffix
+            description = role['description'] + ' Workload: ' + tier + '.'
+            yaml = ('---\nname: ' + name + '\ndescription: ' + json.dumps(description)
+                    + '\nmodel: ' + profile['claude'] + '\ntools: ' + ', '.join(role['tools']) + '\nskills:\n')
+            yaml += ''.join('  - '+json.dumps(config['plugin']+':'+skill)+'\n' for skill in selected)
+            output[root/'agents'/f'{key}{suffix}.md'] = yaml + '---\n\n' + instructions
+            fields = dict(name=name, description=description, model=profile['codex'],
+                          model_reasoning_effort=profile['effort'], developer_instructions=instructions)
+            output[root/'.codex/agents'/f'{name}.toml'] = ''.join(
+                field + ' = ' + json.dumps(value) + '\n' for field, value in fields.items())
     return output
 
 

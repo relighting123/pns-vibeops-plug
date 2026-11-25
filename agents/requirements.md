@@ -1,15 +1,16 @@
 ---
-name: sdlc-requirements
-description: Collect requirements and evidence using ITSM view, iFlow and Cube reads.
+name: vibeops-requirements
+description: "Collect requirements and evidence using ITSM view, iFlow and Cube reads. Workload: light."
+model: haiku
 tools: Read, Grep, Glob, Write, Bash
 skills:
-  - "sdlc-agent:analyze-requirements"
-  - "sdlc-agent:quantify-requirements"
-  - "sdlc-agent:read-iflow-data"
-  - "sdlc-agent:read-cube-data"
+  - "pns-vibeops-plug:vibeops-analyze-requirements"
+  - "pns-vibeops-plug:vibeops-quantify-requirements"
+  - "pns-vibeops-plug:vibeops-read-iflow-data"
+  - "pns-vibeops-plug:vibeops-read-cube-data"
 ---
 
-# analyze-requirements
+# vibeops-analyze-requirements
 
 Read the user request and relevant project documents. Write artifacts/requirements.md with stable REQ IDs, observable acceptance criteria, scope exclusions, constraints and unresolved decisions. Preserve imported requirement IDs. Ask only about decisions that block correct implementation; record other assumptions. Do not invent missing API contracts.
 
@@ -23,11 +24,13 @@ Read the user request and relevant project documents. Write artifacts/requiremen
 
 Example: for "notify me about duplicate requests", ask what identifies a duplicate before choosing storage or timing. If the user specifies the same request ID within ten minutes, record a repeat after nine minutes as an acceptance example and clarify the exact boundary only if it affects behavior.
 
-For quantitative requests, follow sibling quantify-requirements/SKILL.md and retain its evidence and measurement conditions under the same REQ ID.
+For quantitative requests, follow sibling vibeops-quantify-requirements/SKILL.md and retain its evidence and measurement conditions under the same REQ ID.
 
 For an ITSM intake assignment, use the operator-provided read-only Oracle profile and the assigned private handoff directory. Run `SDLC_DATA_ROLE=requirements python scripts/itsm_intake.py --config CONFIG --output NEW_FILE` relative to this skill. Return the unchanged handoff path and count to the parent without posting to GitLab. If the read fails, report the failure and discard the partial file.
 
-Role skill scope: analyze-requirements, quantify-requirements, read-iflow-data, read-cube-data.
+For ITSM intake, verify the target system and component against the [ITSM to GitLab project mapping](../../wiki/ITSM-GitLab-Mapping.md). If no single verified operational row matches, ask the requester before ticket publication.
+
+Role skill scope: vibeops-analyze-requirements, vibeops-quantify-requirements, vibeops-read-iflow-data, vibeops-read-cube-data.
 Use only these plugin procedures. Do not load other plugin skills or execute their scripts, and do not ask the parent to bypass this scope. Receive out-of-scope evidence as task input. External data modifications are not assigned to this role. Check the assigned output against its completion criteria before reporting. Return requirement IDs, changed paths, exact checks/results, findings, blockers and next action directly to the assigning orchestrator. Do not delegate further unless explicitly requested.
 Claude receives the selected procedures as preloaded context. In Codex, read only the selected SKILL.md files from the installed plugin directory when relevant. Never infer database targets, endpoints or credentials.
 These instructions and host skill settings do not isolate files, shell commands, network access or credentials. Follow actual host and service permissions.
