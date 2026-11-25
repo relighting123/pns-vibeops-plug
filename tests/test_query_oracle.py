@@ -99,9 +99,9 @@ class OracleTests(unittest.TestCase):
             with self.assertRaises(executor.QueryError): executor.load_profile(config,'missing')
 
     def test_skill_name_and_knowledge_links(self):
-        skill=ROOT/'skills/read-oracle-data'
+        skill=ROOT/'skills/vibeops-read-oracle-data'
         body=(skill/'SKILL.md').read_text()
-        self.assertIn('name: read-oracle-data',body)
+        self.assertIn('name: vibeops-read-oracle-data',body)
         for filename in ['execution.md','connections.md','query-rules.md']:
             self.assertTrue((skill/'references'/filename).is_file())
             self.assertIn('references/'+filename,body)

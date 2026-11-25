@@ -4,11 +4,20 @@ class PluginTests(unittest.TestCase):
     def test_packages_are_complete(self):
         originals = list((R/'skills').glob('*/SKILL.md'))
         self.assertEqual(len(originals), 18)
+        for skill in originals:
+            self.assertRegex(skill.parent.name, r'^vibeops-(?:[a-z0-9]+-)+[a-z0-9]+$')
+            self.assertIn('name: ' + skill.parent.name, skill.read_text().split('---', 2)[1].splitlines())
+        roles = json.loads((R/'config/role-skills.json').read_text())
+        self.assertEqual(roles['plugin'], 'pns-vibeops-plug')
         for metadata in ('.codex-plugin', '.claude-plugin'):
             manifest=json.loads((R/metadata/'plugin.json').read_text())
+            self.assertEqual(manifest['name'], roles['plugin'])
             self.assertTrue((R/manifest.get('skills','./skills')).is_dir())
         for registry in ('.agents/plugins/marketplace.json', '.claude-plugin/marketplace.json'):
-            entry=json.loads((R/registry).read_text())['plugins'][0]
+            marketplace=json.loads((R/registry).read_text())
+            self.assertEqual(marketplace['name'], roles['plugin'])
+            entry=marketplace['plugins'][0]
+            self.assertEqual(entry['name'], roles['plugin'])
             source=entry['source']
             path=source['path'] if isinstance(source,dict) else source
             self.assertEqual((R/path).resolve(),R)
@@ -20,11 +29,13 @@ class PluginTests(unittest.TestCase):
         self.assertFalse((R/'plugins').exists())
     def test_roles(self):
         files=list((R/'.codex/agents').glob('*.toml'))
-        self.assertEqual(len(files),6)
+        self.assertEqual(len(files),12)
         for p in files:
             role=tomllib.loads(p.read_text())
-            for key in ('name','description','developer_instructions'):self.assertTrue(role[key])
-        self.assertEqual(len(list((R/'agents').glob('*.md'))),6)
+            self.assertTrue(role['name'].startswith('vibeops-'))
+            self.assertEqual(p.stem, role['name'])
+            for key in ('name','description','developer_instructions','model','model_reasoning_effort'):self.assertTrue(role[key])
+        self.assertEqual(len(list((R/'agents').glob('*.md'))),12)
     def test_no_runtime(self):
         self.assertFalse((R/'sdlc_agent').exists())
         self.assertFalse((R/'pyproject.toml').exists())

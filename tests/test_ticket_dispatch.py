@@ -9,7 +9,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'skills/sdlc-orchestrator/scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'skills/vibeops-orchestrate-sdlc/scripts'))
 from ticket_dispatch import dispatch_batch
 
 
@@ -59,7 +59,7 @@ class TicketTest(unittest.TestCase):
             approve(3)
             result = dispatch_batch(api, cfg, tickets)
             first = result[0]['dispatch']
-            self.assertEqual(first['agent'], 'sdlc-requirements')
+            self.assertEqual(first['agent'], 'vibeops-requirements')
             self.assertEqual(result[2]['dispatch']['agent'], first['agent'])
             self.assertNotEqual(first['worktree'], result[2]['dispatch']['worktree'])
             self.assertEqual(result[1]['dispatch'], 'waiting for analyze-requirements')

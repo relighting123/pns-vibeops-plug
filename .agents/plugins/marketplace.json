@@ -1,8 +1,8 @@
 {
-  "name": "pns-sdlc-agent",
+  "name": "pns-vibeops-plug",
   "plugins": [
     {
-      "name": "sdlc-agent",
+      "name": "pns-vibeops-plug",
       "source": {
         "source": "local",
         "path": "."

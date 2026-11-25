@@ -1,11 +1,11 @@
 {
-  "name": "pns-sdlc-agent",
+  "name": "pns-vibeops-plug",
   "owner": {
-    "name": "SDLC Agent contributors"
+    "name": "PNS VibeOps Plug contributors"
   },
   "plugins": [
     {
-      "name": "sdlc-agent",
+      "name": "pns-vibeops-plug",
       "source": "./",
       "description": "Host-native SDLC skills, agents and wiki retrieval"
     }

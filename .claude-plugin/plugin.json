@@ -1,10 +1,10 @@
 {
-  "name": "sdlc-agent",
-  "version": "2.4.0",
+  "name": "pns-vibeops-plug",
+  "version": "3.0.0",
   "description": "Host-native SDLC workflow; no separate runtime installation required",
   "author": {
-    "name": "SDLC Agent contributors"
+    "name": "PNS VibeOps Plug contributors"
   },
-  "repository": "https://github.com/relighting123/pns-sdlc-agent",
+  "repository": "https://github.com/relighting123/pns-vibeops-plug",
   "license": "MIT"
 }

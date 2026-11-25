@@ -2,7 +2,7 @@
 
 ## 실행 구조
 
-Codex 메인 세션이 `skills/sdlc-orchestrator/SKILL.md`의 지침으로 작업을 배정하고 결과를 검토한다. 역할은 요구사항·설계·개발·테스트·리뷰·배포다. 작업마다 목표, 요구사항 ID, 담당 경로와 완료 조건을 전달한다. 서브에이전트는 결과를 자체 확인하고 변경 경로, 실행한 검사와 결과, 차단 사항을 메인에 직접 회신한다. 메인은 실제 산출물을 확인한 뒤 후속 작업을 배정한다. 네이티브 위임을 사용할 수 없는 환경에서는 메인 세션이 같은 절차를 수행한다.
+Codex 메인 세션이 `skills/vibeops-orchestrate-sdlc/SKILL.md`의 지침으로 작업을 배정하고 결과를 검토한다. 역할은 요구사항·설계·개발·테스트·리뷰·배포다. 작업마다 목표, 요구사항 ID, 담당 경로와 완료 조건을 전달한다. 서브에이전트는 결과를 자체 확인하고 변경 경로, 실행한 검사와 결과, 차단 사항을 메인에 직접 회신한다. 메인은 실제 산출물을 확인한 뒤 후속 작업을 배정한다. 네이티브 위임을 사용할 수 없는 환경에서는 메인 세션이 같은 절차를 수행한다.
 
 ## 변경 기준
 
@@ -21,18 +21,18 @@ Codex 메인 세션이 `skills/sdlc-orchestrator/SKILL.md`의 지침으로 작�
 
 예를 들어 Cube 읽기 결과에서 필요한 필드만 반환하려면, 깨끗한 main을 기준으로 git switch -c feat/cube-result-fields를 실행한다. 기존 작업이 있다면 별도 워크트리를 만든다. PR 제목은 「Cube 조회 결과에 필요한 필드만 반환」으로 짓고 관련 요구사항, 변경 경로, 테스트, 호환성, 복구 방법을 기록한다. 회귀 수정에는 fix/cube-result-fields, 긴급 운영 수정에는 배포 태그에서 분기한 fix/<문제>를 사용한다. 태그에서 수정한 경우 수정 사항이 main에도 반영됐는지 확인한다.
 
-- 이름의 역할. Git 레포와 마켓플레이스 ID는 pns-sdlc-agent, 사용자가 설치하는 플러그인 ID는 sdlc-agent, 진입 스킬은 sdlc-orchestrator다. 파일 이름·설치 ID와 릴리스 버전은 각자의 계약이다.
-- 버전 선택. 호환되는 버그 수정은 PATCH, 호환되는 기능 추가는 MINOR, 기존 호출이나 설정을 깨는 변경은 MAJOR를 검토한다. 현재 매니페스트 2.3.0에서 호환 기능을 추가했다면 2.4.0, 태그는 v2.4.0, 릴리스 제목은 SDLC Agent 2.4.0이라는 예를 쓸 수 있다. 실제 번호는 기존 태그를 확인해 확정한다.
+- 이름의 역할. 플러그인과 마켓플레이스 ID는 `pns-vibeops-plug`, 진입 스킬은 `vibeops-orchestrate-sdlc`다. 파일 이름·설치 ID와 릴리스 버전은 각자의 계약이다.
+- 버전 선택. 호환되는 버그 수정은 PATCH, 호환되는 기능 추가는 MINOR, 기존 호출이나 설정을 깨는 변경은 MAJOR를 검토한다. 설치 ID와 스킬 이름이 바뀌는 이번 릴리스는 3.0.0이며 발행 시 태그는 v3.0.0, 릴리스 제목은 PNS VibeOps Plug 3.0.0을 쓴다. 실제 번호는 기존 태그를 확인해 확정한다.
 - 발행 순서. .codex-plugin/plugin.json과 .claude-plugin/plugin.json의 version을 일치시킨다. 마켓플레이스 엔트리가 루트 패키지와 같은 ID를 가리키는지 확인한다. PR 병합 후 승인된 커밋을 별도 환경에서 설치해 시작 훅, 스킬 검색, 대표 작업의 배정과 회신을 검사한다. 승인 후 해당 커밋에 태그를 붙이고 태그·커밋·두 호스트 검증 결과를 릴리스 기록에 남긴다.
 - 복구 순서. 문제 버전과 증상을 기록하고 이전 검증 태그의 패키지로 복귀한다. 설치와 대표 작업을 다시 확인한다. 태그를 이동하기보다 수정 PR과 새 버전을 준비한다. 데이터 변경에서 이미 발생한 외부 효과는 서비스의 승인된 복구 절차로 별도 처리한다.
 
 ## 스킬 문서 작성 실습
 
-예를 들어 릴리스 노트에서 변경된 설정을 추출하는 기능은 skills/inspect-release-notes/SKILL.md부터 만든다. 아래 예시는 추가 작업의 견본이다.
+예를 들어 릴리스 노트에서 변경된 설정을 추출하는 기능은 skills/vibeops-inspect-release-notes/SKILL.md부터 만든다. 아래 예시는 추가 작업의 견본이다.
 
 ```markdown
 ---
-name: inspect-release-notes
+name: vibeops-inspect-release-notes
 description: 릴리스 노트에서 설정 변경과 마이그레이션 요구사항을 찾아 검토할 때 사용한다.
 ---
 
@@ -58,15 +58,15 @@ description: 릴리스 노트에서 설정 변경과 마이그레이션 요구�
 
 | 기능과 수정 진입점 | 변경 예제와 검증 |
 |---|---|
-| sdlc-orchestrator | skills/sdlc-orchestrator/SKILL.md에 검증 담당의 완료 조건을 반영한다. 임무에 REQ ID·파일 소유권·증거를 전달하고 결과가 빠지면 보완 요청한다. artifacts/sdlc-progress.md에 맡긴 역할과 확인 결과를 남긴다. |
-| analyze-requirements | 요청 범위를 Cube 조회로 좁히고 입력 제공 여부를 확인한다. artifacts/requirements.md의 REQ-001에 범위와 인수 기준을 적는다. 확인 질문의 답이 명세에 반영됐는지 대조한다. |
-| quantify-requirements | 실측 p95가 8초이고 개선 목표가 25%라면 목표는 6초 이하로 기록한다. 동일 입력·동시성·캐시 조건을 남긴다. 실측 로그가 없다면 미측정으로 표시한다. |
-| design-system | artifacts/design.md에 응답 필드 제한과 재시도 예산을 설계한다. API 계약과 기존 호출의 응답 호환성을 확인한다. |
-| implement-feature | 담당 경로에서 최소 변경으로 구현하고 REQ-001을 일치시킨다. 공용 HTTP 동작에 영향이 있으면 iFlow 회귀 범위도 포함한다. |
-| verify-change | 고정된 입력으로 소요시간을 재고 정상·503·타임아웃을 검사한다. artifacts/test-report.md에 명령, 표본, 결과, 미검증 환경을 기록한다. |
-| review-release | artifacts/review.md에 근거와 변경 위험을 적는다. 다른 API의 응답에서 필드가 빠졌는지 확인하고 발견한 문제는 파일과 재현 조건을 남긴다. |
-| deploy-release | 승인 대상에 검증 태그를 배포하고 대표 조회를 확인한다. artifacts/deployment.md에 버전, 커밋, 환경, 확인 결과와 이전 배포 버전을 적는다. |
-| manage-worktrees | 개발과 문서 변경이 서로 독립적이면 브랜치와 워크트리를 나눈다. 통합 전에 각 diff와 테스트를 확인하고 작업 종료 후 깨끗한 워크트리를 정리한다. |
+| vibeops-orchestrate-sdlc | skills/vibeops-orchestrate-sdlc/SKILL.md에 검증 담당의 완료 조건을 반영한다. 임무에 REQ ID·파일 소유권·증거를 전달하고 결과가 빠지면 보완 요청한다. artifacts/sdlc-progress.md에 맡긴 역할과 확인 결과를 남긴다. |
+| vibeops-analyze-requirements | 요청 범위를 Cube 조회로 좁히고 입력 제공 여부를 확인한다. artifacts/requirements.md의 REQ-001에 범위와 인수 기준을 적는다. 확인 질문의 답이 명세에 반영됐는지 대조한다. |
+| vibeops-quantify-requirements | 실측 p95가 8초이고 개선 목표가 25%라면 목표는 6초 이하로 기록한다. 동일 입력·동시성·캐시 조건을 남긴다. 실측 로그가 없다면 미측정으로 표시한다. |
+| vibeops-design-system | artifacts/design.md에 응답 필드 제한과 재시도 예산을 설계한다. API 계약과 기존 호출의 응답 호환성을 확인한다. |
+| vibeops-implement-feature | 담당 경로에서 최소 변경으로 구현하고 REQ-001을 일치시킨다. 공용 HTTP 동작에 영향이 있으면 iFlow 회귀 범위도 포함한다. |
+| vibeops-verify-change | 고정된 입력으로 소요시간을 재고 정상·503·타임아웃을 검사한다. artifacts/test-report.md에 명령, 표본, 결과, 미검증 환경을 기록한다. |
+| vibeops-review-release | artifacts/review.md에 근거와 변경 위험을 적는다. 다른 API의 응답에서 필드가 빠졌는지 확인하고 발견한 문제는 파일과 재현 조건을 남긴다. |
+| vibeops-deploy-release | 승인 대상에 검증 태그를 배포하고 대표 조회를 확인한다. artifacts/deployment.md에 버전, 커밋, 환경, 확인 결과와 이전 배포 버전을 적는다. |
+| vibeops-manage-worktrees | 개발과 문서 변경이 서로 독립적이면 브랜치와 워크트리를 나눈다. 통합 전에 각 diff와 테스트를 확인하고 작업 종료 후 깨끗한 워크트리를 정리한다. |
 
 ## 외부 연동과 패키지 기능별 예제
 
@@ -74,13 +74,13 @@ description: 릴리스 노트에서 설정 변경과 마이그레이션 요구�
 
 | 기능 | 예제와 확인 |
 |---|---|
-| read-iflow-data | 조회용 catalog에 가상 요청 상태 조회 작업을 등록한다. 스키마에 요청 ID를 지정하고 projection과 잘못된 입력 거절을 MockTransport로 확인한다. |
-| modify-iflow-data | 가상 요청 상태 변경의 작업 ID와 쓰기 설정을 검토한다. --apply 누락 시 전송이 없고 타임아웃 시 상태 조회로 이어지는지 확인한다. |
-| read-cube-data | 가상 조회 작업의 response_fields에 필요한 필드만 둔다. retry_safe 조회의 503 재시도와 응답 한도를 검사한다. |
-| modify-cube-data | 가상 수정 요청의 스키마와 허용 작업을 등록한다. HTTP 202는 접수로 기록하고 서비스의 상태 조회로 완료를 확인한다. |
-| read-oracle-data | 등록 SELECT에 바인드 변수와 필요한 컬럼을 사용한다. 승인된 조회 계정에서 범위와 최대 행 제한을 확인한다. |
-| modify-oracle-data | 등록 UPDATE에 대상 키와 현재값 조건을 사용한다. expected_rows=1이면 한 행에서만 커밋하고 0행 또는 복수 행은 롤백되는지 가짜 연결로 확인한다. |
-| search-wiki | 공용 위키 발행 브랜치에 새 커밋을 만든 테스트 레포로 동기화한다. 최초 조회, 캐시 사용, 최신 강제 확인, 원격 장애 시 이전 버전 표시를 확인한다. |
-| update-shared-wiki | PDF의 새 재시도 정책을 sources 문서에 반영한다. 생성물과 원본을 PR에 포함하고 병합된 커밋의 해당 절을 재조회한다. |
+| vibeops-read-iflow-data | 조회용 catalog에 가상 요청 상태 조회 작업을 등록한다. 스키마에 요청 ID를 지정하고 projection과 잘못된 입력 거절을 MockTransport로 확인한다. |
+| vibeops-modify-iflow-data | 가상 요청 상태 변경의 작업 ID와 쓰기 설정을 검토한다. --apply 누락 시 전송이 없고 타임아웃 시 상태 조회로 이어지는지 확인한다. |
+| vibeops-read-cube-data | 가상 조회 작업의 response_fields에 필요한 필드만 둔다. retry_safe 조회의 503 재시도와 응답 한도를 검사한다. |
+| vibeops-modify-cube-data | 가상 수정 요청의 스키마와 허용 작업을 등록한다. HTTP 202는 접수로 기록하고 서비스의 상태 조회로 완료를 확인한다. |
+| vibeops-read-oracle-data | 등록 SELECT에 바인드 변수와 필요한 컬럼을 사용한다. 승인된 조회 계정에서 범위와 최대 행 제한을 확인한다. |
+| vibeops-modify-oracle-data | 등록 UPDATE에 대상 키와 현재값 조건을 사용한다. expected_rows=1이면 한 행에서만 커밋하고 0행 또는 복수 행은 롤백되는지 가짜 연결로 확인한다. |
+| vibeops-search-wiki | 공용 위키 발행 브랜치에 새 커밋을 만든 테스트 레포로 동기화한다. 최초 조회, 캐시 사용, 최신 강제 확인, 원격 장애 시 이전 버전 표시를 확인한다. |
+| vibeops-update-shared-wiki | PDF의 새 재시도 정책을 sources 문서에 반영한다. 생성물과 원본을 PR에 포함하고 병합된 커밋의 해당 절을 재조회한다. |
 | 훅과 패키징 | 시작 안내가 바뀌면 hooks/hooks.json과 session-start.sh의 연결을 확인한다. 저장소 바깥의 작업 디렉터리에서 훅을 실행하고, 설치본에서 스킬 진입과 공용 Python import를 확인한다. |
 | MCP 연동 확장 | 기존 문서 검색으로 해결하기 어려운 데이터 소스를 추가할 때 docs/MCP.md를 기준으로 호스트 연결과 도구 계약을 설계한다. 허용된 테스트 환경에서 도구 노출, 잘못된 입력과 연결 실패를 확인한다. |
