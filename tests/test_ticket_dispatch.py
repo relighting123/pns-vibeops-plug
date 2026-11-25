@@ -29,13 +29,35 @@ class GitLab:
 
     def __init__(self):
         self.notes = {}
+        self.mr = None
 
     def get(self, path, params=None):
-        return Response(self.notes.get(path, []) if params else {'state': 'opened'})
+        if path.endswith('/notes'):
+            return Response(self.notes.get(path, []))
+        if path == 'projects/1':
+            return Response({'id': 1, 'default_branch': 'main', 'path_with_namespace': 'org/app'})
+        if path.endswith('/merge_requests'):
+            return Response([self.mr] if self.mr else [])
+        if '/merge_requests/' in path:
+            return Response(self.mr)
+        return Response({'state': 'opened', 'title': 'ITSM request'})
 
     def post(self, path, json):
-        self.notes.setdefault(path, []).append({'author': {'id': 1}, 'body': json['body']})
-        return Response({})
+        if path.endswith('/merge_requests'):
+            self.mr = dict(json, iid=1, source_project_id=1, state='opened',
+                           web_url='https://test.example/org/app/-/merge_requests/1')
+            return Response(self.mr)
+        return Response(self.comment(path, 1, json['body']))
+
+    def put(self, path, json):
+        self.mr.update(json)
+        return Response(self.mr)
+
+    def comment(self, path, author, body):
+        notes = self.notes.setdefault(path, [])
+        note = {'id': len(notes) + 1, 'author': {'id': author}, 'body': body}
+        notes.append(note)
+        return note
 
 
 class TicketTest(unittest.TestCase):
@@ -52,9 +74,11 @@ class TicketTest(unittest.TestCase):
             tickets = [{'iid': i, 'revision': 'v1'} for i in (1, 2, 3)]
             api = GitLab()
             def approve(i):
-                notes = api.notes[f'projects/1/issues/{i}/notes']
-                notes.append({'author': {'id': 9}, 'body': notes[-1]['body'].splitlines()[-1]})
+                api.comment(f'projects/1/issues/{i}/notes', 9, '검토 결과 이상 없습니다.')
+            api.comment('projects/1/issues/2/notes', 9, '승인')
             dispatch_batch(api, cfg, tickets)
+            api.comment('projects/1/issues/2/notes', 10, '승인합니다')
+            api.comment('projects/1/issues/2/notes', 9, '이상 없음. 단, 수정 후 진행')
             approve(1)
             approve(3)
             result = dispatch_batch(api, cfg, tickets)
@@ -93,10 +117,28 @@ class TicketTest(unittest.TestCase):
             api = GitLab()
             def tick(token=None):
                 return dispatch(api, cfg, dict(iid=1, revision='v1'), token)
+            remote = Path(tmp) / 'remote.git'
+            git(tmp, 'init', '--bare', '-q', str(remote))
+            remote_patch = patch('ticket_dispatch.project_remote', return_value=str(remote))
+            remote_patch.start()
+            self.addCleanup(remote_patch.stop)
             for stage in STAGES:
-                self.assertEqual(tick(), 'waiting for '+stage)
-                notes = api.notes['projects/1/issues/1/notes']
-                notes.append(dict(author=dict(id=9), body=notes[-1]['body'].splitlines()[-1]))
+                if stage == 'deploy-release':
+                    self.assertEqual(tick(), 'waiting for merge')
+                    git(repo, 'checkout', '-qb', 'integration', verified)
+                    git(repo, 'commit', '--allow-empty', '-qm', 'merge commit')
+                    merged = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                                     cwd=repo, text=True).strip()
+                    git(repo, 'push', str(remote), 'HEAD:refs/heads/main')
+                    api.mr.update(state='merged', merge_commit_sha=merged)
+                if stage == 'implement-feature':
+                    self.assertEqual(tick(), 'waiting for design signoff')
+                    self.assertIsNone(api.mr)
+                    api.comment('projects/1/issues/1/notes', 9, '승인합니다')
+                else:
+                    self.assertEqual(tick(), 'waiting for '+stage)
+                    path = 'issues/1' if stage in STAGES[:2] else 'merge_requests/1'
+                    api.comment(f'projects/1/{path}/notes', 9, '승인합니다')
                 assignment = tick()
                 folder = Path(assignment['worktree'])
                 token = assignment['assignment']
@@ -106,15 +148,18 @@ class TicketTest(unittest.TestCase):
                     artifact.write_text(stage)
                     git(folder, 'add', '.')
                     git(folder, 'commit', '-qm', stage)
+                if stage == 'implement-feature':
+                    self.assertTrue(api.mr['title'].startswith('Draft:'))
+                    self.assertIn('이슈 #1', api.mr['description'])
+                    api.mr['sha'] = subprocess.check_output(
+                        ['git', 'rev-parse', 'HEAD'], cwd=folder, text=True).strip()
                 if stage == 'verify-change':
                     opts['verify_command'] = [sys.executable, '-c', 'raise SystemExit(1)']
                     self.assertIn('verification failed', tick(token))
                     opts['verify_command'] = [sys.executable, '-c', 'pass']
                     verified = assignment['target_sha']
                 if stage == 'deploy-release':
-                    self.assertEqual(assignment['target_sha'], verified)
-                    git(folder, 'commit', '--allow-empty', '-qm', 'new revision')
-                    self.assertIn('fresh approval required', tick(token))
-                    self.assertEqual(tick(), 'waiting for verify-change')
-                    break
+                    self.assertEqual(assignment['target_sha'], merged)
+                    self.assertNotEqual(assignment['target_sha'], verified)
+                    self.assertIn('-deploy-', folder.name)
                 self.assertEqual(tick(token), stage+' completed')
