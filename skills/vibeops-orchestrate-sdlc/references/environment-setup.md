@@ -17,6 +17,6 @@ python3 "$PLUGIN_ROOT/skills/vibeops-orchestrate-sdlc/scripts/setup_environment.
 | 디스패치 | CONFIG의 dispatch에 worktrees, base_ref, workers, 단계별 approvers 및 verify_command를 지정한다. GitLab 승인과 워커 여유가 있는 후보부터 배정된다. 배포는 필요한 경우에 승인 및 명령을 설정한다. |
 | 워커 호스트 | 에이전트 역할이 설치된 세션에서 대표 티켓 1건을 승인하고 워커가 실제 배정되는지 확인한다. 자동 반복은 호스트 예약 실행에서 구성한다. |
 | 공용 위키 | config/shared-knowledge.json 또는 SDLC_WIKI_URL과 SDLC_WIKI_BRANCH를 설정한다. 새 오케스트레이션에서 원격 SHA 확인과 로컬 사본 사용을 점검한다. |
-| 상태 | 같은 배치와 재시도에는 동일한 state_db를 사용한다. 재실행 시 이슈 IID 유지와 워커 한도를 확인한다. |
+| 상태 | 같은 자동화 계정으로 이슈의 작업 상태 댓글을 읽고 쓴다. 재실행 시 이슈 IID 유지와 워커 한도를 확인한다. |
 
 [배치와 승인 설정](itsm-gitlab.md)

@@ -17,10 +17,13 @@ import gitlab_issue_sync as sync
 class RoutingTests(unittest.TestCase):
     def test_mixed_batch_and_changed_destination(self):
         posts = []
+        issues = {}
 
         def respond(request):
             if request.method == 'GET':
-                return httpx.Response(200, json=[])
+                return httpx.Response(200, json=issues.get((request.url.path, request.url.params['labels']), []))
+            payload = json.loads(request.content)
+            issues[request.url.path, payload['labels']] = [dict(payload, iid=1, web_url=str(request.url))]
             posts.append((request.url.host, request.url.path))
             return httpx.Response(201, json={'iid': 1, 'web_url': str(request.url)})
 
@@ -35,7 +38,7 @@ class RoutingTests(unittest.TestCase):
             registry = root / 'routes'
             registry.write_text(json.dumps(routes + [dict(routes[0], target_system='dup')] * 2))
             (root / 'config').write_text(json.dumps({'routing_file': 'routes', 'batch_size': 10,
-                'source': 'test', 'oldest_first': True, 'state_db': str(root / 'db')}))
+                'source': 'test', 'oldest_first': True}))
             rows = [dict(target_system=name, request_id=str(i), revision='1', title='t', summary='s')
                     for i, name in enumerate(('a', 'missing', 'dup', 'b'))]
             for i, row in enumerate(rows):
