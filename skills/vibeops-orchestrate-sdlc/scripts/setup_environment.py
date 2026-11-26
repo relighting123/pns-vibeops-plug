@@ -100,7 +100,7 @@ def setup(path):
         raise ValueError('Oracle profile file does not exist')
     config['oracle_config'] = str(oracle_config)
     config.setdefault('batch_size', 20)
-    config.setdefault('state_db', str(path.parent / 'itsm.sqlite3'))
+    config.pop('state_db', None)
     config['oldest_first'] = True
     registry = path.parent / config.get('routing_file', 'itsm-gitlab-routes.json')
     config['routing_file'] = str(registry)
@@ -150,12 +150,6 @@ def check(path):
         load_profile(config['oracle_config'], config['database'])
 
     report('Oracle driver and profile', oracle)
-    def state_directory():
-        state = Path(config['state_db']).expanduser()
-        if not state.is_absolute() or not state.parent.is_dir() or not os.access(state.parent, os.W_OK):
-            raise ValueError('Expected an absolute state_db path in a writable directory')
-
-    report('SQLite directory', state_directory)
     registry = path.parent / config.get('routing_file', Path(__file__).resolve().parents[3]
                                        / 'wiki/itsm-gitlab-routes.json')
     routes = [config] if 'routing_file' not in config and 'project_id' in config else json.loads(registry.read_text())

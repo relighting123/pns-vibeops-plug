@@ -22,8 +22,7 @@
   "batch_size": 20,
   "gitlab_url": "https://gitlab.example.internal",
   "project_id": 42,
-  "token_env": "SDLC_GITLAB_TOKEN",
-  "state_db": "/protected/itsm-intake.sqlite3"
+  "token_env": "SDLC_GITLAB_TOKEN"
 }
 ```
 
@@ -34,9 +33,9 @@ SDLC_DATA_ROLE=requirements python skills/vibeops-analyze-requirements/scripts/i
 python skills/vibeops-orchestrate-sdlc/scripts/gitlab_issue_sync.py --config CONFIG --intake HANDOFF
 ```
 
-수동 실행과 예약 실행은 같은 설정과 같은 영속 상태 DB를 사용한다. 호스트 스케줄러는 한 프로젝트·소스의 배치가 겹치지 않도록 운영한다. GitLab 조회에는 ITSM 키 기반 라벨을 쓰고, 처음 POST하기 전에 SQLite로 생성 시도를 기록한다. 생성 응답을 잃으면 다음 실행에서 같은 라벨의 이슈를 찾는다. 조회 결과도 없으면 관리자가 GitLab에서 생성 여부와 라벨을 확인해 복구할 때까지 해당 건은 대기한다. 일부 행이 실패해도 성공한 행을 출력하며 종료 코드는 1이다. 생성 시도 기록은 성공 후에도 유지한다.
+한 운영 PC의 한 OS 계정에서 배치를 실행한다. OS 파일 잠금은 겹치는 실행을 막고, 업무 상태는 GitLab에 저장한다. 서로 다른 PC의 스케줄러를 같은 프로젝트에 동시에 연결하면 중복 발행될 수 있다. ITSM 키 라벨은 재실행 시 같은 이슈를 찾는 식별자이므로 유지한다. 프로젝트를 매핑에서 제거하기 전에 기존 이슈를 정리한다.
 
-이 도구의 자동화 범위는 상위 이슈 접수와 동기화다. 후속 단계는 기존 스킬이 담당한다. 승인 조회와 MR 및 하위 티켓 기록은 사용 환경에서 허용된 GitLab 도구에 연결하고, 승인 근거가 없으면 해당 요청을 대기 상태로 남긴다.
+이슈의 자동화 계정 댓글에 현재 단계, 배정 ID, 검증 SHA, MR 번호를 기록한다. 자동화 계정을 고정하고 상태 댓글을 보존한다. 전환 시 기존 버전으로 진행 중인 건을 먼저 마무리한다. 기존 로컬 기록은 자동 이관되지 않는다.
 
 ## 요청 접수
 
@@ -91,13 +90,26 @@ CONFIG에 아래 dispatch 객체를 추가한다. repository는 구현 대상 �
 {"dispatch":{"repository":"/work/application","worktrees":"/work/tickets","base_ref":"origin/main","workers":3,"approvers":{"analyze-requirements":[11],"design-system":[12],"implement-feature":[12],"verify-change":[13],"review-release":[14]}}}
 ```
 
-메인 세션은 반환된 assignment마다 해당 단계의 기본 서브에이전트를 생성하고 전용 워크트리를 지정한다. workers는 같은 state_db에서 활성 배정 수를 제한한다(기본 3, 범위 1~16). 이전 배정이 남아 있으면 중복 실행을 보류한다. 질문과 답변은 티켓과 스레드 ID를 기준으로 전달한다. 메인이 단계 산출물과 검사를 검토한 후 해당 티켓 한 건의 HANDOFF로 --dispatch 대신 --complete ASSIGNMENT를 호출한다. 변경 커밋과 체크포인트가 확인되면 배정이 해제된다. 중단된 배정은 작업 브랜치와 진행 기록을 대조해 복구한다. 기존 CLI 배치에서 전환할 때는 진행 중인 프로세스를 먼저 정리한다.
+메인 세션은 반환된 assignment마다 해당 단계의 기본 서브에이전트를 생성하고 전용 워크트리를 지정한다. workers는 같은 GitLab 프로젝트에서 활성 배정 수를 제한한다(기본 3, 범위 1~16). 이전 배정이 남아 있으면 중복 실행을 보류한다. 질문과 답변은 티켓과 스레드 ID를 기준으로 전달한다. 메인이 단계 산출물과 검사를 검토한 후 해당 티켓 한 건의 HANDOFF로 --dispatch 대신 --complete ASSIGNMENT를 호출한다. 변경 커밋과 체크포인트가 확인되면 배정이 해제된다. 중단된 배정은 작업 브랜치와 진행 기록을 대조해 복구한다. 기존 CLI 배치에서 전환할 때는 진행 중인 프로세스를 먼저 정리한다.
 
 
 ## 이슈에서 MR로 전환
 
 - 요구사항과 설계는 ITSM 이슈에서 관리한다. 설계 산출물 커밋을 검토한 담당자가 이슈의 `design-signoff` 요청에 승인하면 디스패처가 티켓 브랜치를 푸시하고 Draft MR을 만든다. 이슈와 MR은 서로 연결된다.
-- 구현이 끝나면 디스패처가 같은 브랜치에 구현 커밋을 푸시한다. 테스트와 리뷰 승인 요청은 MR 댓글에 기록된다. 리뷰 완료 후 Draft 표시가 해제되며 담당자가 GitLab에서 검토하고 병합한다.
+- 구현이 끝나면 디스패처가 같은 브랜치에 구현 커밋을 푸시한다. 테스트와 리뷰도 원 요청 이슈에서 Status를 확인한다. 리뷰 완료 후 Draft 표시가 해제되며 담당자가 GitLab에서 검토하고 병합한다.
 - 배포는 배포 옵션을 켠 경우에 실행한다. MR 병합 상태, 검증된 소스 SHA, 대상 브랜치에 병합 SHA가 포함됐는지 확인한다. 병합 SHA의 전용 워크트리에서 테스트를 다시 실행하고 배포 승인을 받은 해당 SHA를 워커에 넘긴다.
 - Git 푸시·페치는 운영 PC의 Git HTTPS 인증을 사용한다. GitLab API 토큰에는 MR과 댓글 읽기·쓰기 권한이 필요하다. MR 대상 브랜치는 GitLab 프로젝트 기본 브랜치이며 `dispatch.target_branch`로 지정할 수 있다.
-- 승인 요청 이후 지정 승인자가 남긴 최신 댓글을 확인한다. “승인합니다”, “검토 결과 이상 없습니다”, “진행해도 됩니다”처럼 명확한 댓글을 승인으로 처리한다. 조건이나 수정 요청이 포함되면 대기한다.
+- GitLab Premium·Ultimate의 최상위 그룹에서 이슈에 사용할 `검토 대기`와 `검토 완료`를 모두 In progress 범주로 등록한다. 각 검토를 시작할 때 자동화가 이슈의 Status를 `검토 대기`로 변경한다. 지정 담당자가 원 요청 이슈의 Status에서 `검토 완료`를 선택하면 다음 배치가 현재 상태와 GitLab의 시스템 기록에 남은 변경자를 확인한다.
+
+## 단계별 산출물
+
+| 단계 | Markdown 파일 | GitLab 위치 |
+|---|---|---|
+| 분석 | `requirements.md` | 요청 이슈 |
+| 설계 | `design.md` | 요청 이슈 |
+| 구현 | `implementation.md` | 요청 이슈와 MR |
+| 테스트 | `test-results.md` | 요청 이슈와 MR |
+| 리뷰 | `review.md` | 요청 이슈와 MR |
+| 배포 | `release.md` | 요청 이슈와 MR |
+
+워커는 배정 결과의 `report_path`에 Markdown을 작성한다. 분석·설계·구현 보고서는 요청 브랜치의 `artifacts/vibeops/`에 커밋한다. 단계 완료 호출 시 브랜치를 푸시하고 이슈에 검토 대상 커밋의 파일 링크를 남긴다. 설계 검토 요청에도 같은 링크를 표시한다. 테스트·리뷰·배포 보고서는 작업 트리 밖에서 작성하며, 완료 시 GitLab 프로젝트 첨부로 올리고 검증 대상 커밋과 함께 연결한다. 메인은 보고서 내용이 해당 프로젝트에 공유 가능한지 확인한 후에만 완료를 호출한다.

@@ -1,11 +1,11 @@
 """Synchronize a requirements-agent handoff to GitLab."""
 import argparse
-from contextlib import closing, ExitStack
+from contextlib import ExitStack
 import hashlib
 import json
 import os
 from pathlib import Path
-import sqlite3
+from issue_state import scheduler_lock
 import sys
 from urllib.parse import urlsplit
 
@@ -17,7 +17,7 @@ from itsm_handoff import oldest_first, validate_requests
 END = '<!-- /sdlc-itsm -->'
 
 
-def synchronize(client, db, config, request):
+def synchronize(client, config, request):
     identity = json.dumps([config['source'], request['request_id']], ensure_ascii=False)
     digest = hashlib.sha256(identity.encode()).hexdigest()
     marker = f'<!-- sdlc-itsm:{digest} -->'
@@ -33,19 +33,6 @@ def synchronize(client, db, config, request):
     issues = response.json()
     if len(issues) > 1:
         raise ValueError('Multiple GitLab issues share the ITSM key')
-    key = (str(client.base_url), config['project_id'], digest)
-    # Pin the destination before any write, including across concurrent runs.
-    with db:
-        db.execute('BEGIN IMMEDIATE')
-        prior = db.execute('SELECT host, project FROM issue_claim WHERE digest=?', (digest,)).fetchall()
-        if any(tuple(row) != key[:2] for row in prior):
-            raise ValueError('Existing ITSM claim belongs to another project; reconcile before moving')
-        if issues:
-            db.execute('INSERT OR IGNORE INTO issue_claim VALUES (?, ?, ?)', key)
-        else:
-            claim = db.execute('INSERT OR IGNORE INTO issue_claim VALUES (?, ?, ?)', key)
-            if claim.rowcount != 1:
-                raise ValueError('Previous create attempt needs GitLab reconciliation')
     if issues:
         issue, = issues
         description = issue['description'] or ''
@@ -65,9 +52,6 @@ def synchronize(client, db, config, request):
         response.raise_for_status()
         issue = response.json()
         status = 'created'
-    # Keep the claim after a successful create so a missing label cannot cause a second POST.
-    with db:
-        db.execute('INSERT OR IGNORE INTO issue_claim VALUES (?, ?, ?)', key)
     return {'iid': issue['iid'], 'url': issue['web_url'], 'status': status, **request}
 
 
@@ -131,18 +115,12 @@ def main():
                 raise ValueError('Invalid routing registry')
         if type(config['batch_size']) is not int or not 1 <= config['batch_size'] <= 100:
             raise ValueError('Invalid batch size')
-        state = Path(config['state_db']).expanduser()
-        if not state.is_absolute():
-            raise ValueError('state_db must be absolute')
         requests = validate_requests(json.loads(args.intake.read_text(encoding="utf-8")), config["batch_size"])
         if config.get("oldest_first") or any("created_at" in row for row in requests):
             requests = oldest_first(requests)
         failures = 0
-        with closing(sqlite3.connect(state)) as db, ExitStack() as stack:
+        with scheduler_lock(), ExitStack() as stack:
             clients = {}
-            with db:
-                db.execute('CREATE TABLE IF NOT EXISTS issue_claim ('
-                           'host TEXT, project INTEGER, digest TEXT, PRIMARY KEY(host, project, digest))')
             for index, request in enumerate(requests, start=1):
                 try:
                     selected = destination(config, routes, request)
@@ -154,7 +132,24 @@ def main():
                     client = clients[key]
                     if type(selected['project_id']) is not int or selected['project_id'] < 1:
                         raise ValueError('Invalid project ID')
-                    ticket = synchronize(client, db, selected, request)
+                    identity = json.dumps([config['source'], request['request_id']], ensure_ascii=False)
+                    label = 'sdlc-itsm-' + hashlib.sha256(identity.encode()).hexdigest()
+                    checked = {(selected['gitlab_url'], selected['project_id'])}
+                    for route in routes or ():
+                        target = (route['gitlab_url'], route['project_id'])
+                        if target in checked:
+                            continue
+                        checked.add(target)
+                        other = route
+                        remote_key = tuple(other.get(k) for k in ('gitlab_url', 'token_ref', 'token_env', 'token_file'))
+                        if remote_key not in clients:
+                            clients[remote_key] = stack.enter_context(open_client(other))
+                        response = clients[remote_key].get(f'projects/{target[1]}/issues',
+                            params={'labels': label, 'scope': 'all', 'per_page': 1})
+                        response.raise_for_status()
+                        if response.json():
+                            raise ValueError('Existing ITSM issue belongs to another project')
+                    ticket = synchronize(client, selected, request)
                     ticket.update(project_id=selected['project_id'], gitlab_url=selected['gitlab_url'])
                     print(json.dumps(ticket, ensure_ascii=False))
                     if args.dispatch or args.complete:
