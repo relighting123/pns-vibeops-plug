@@ -15,6 +15,12 @@ For “when A, do X”, model A, non-A and unknown A; distinguish preserving exi
 
 For each REQ record decided behavior, normal scenario, material exceptions, confirmed/assumed/open status with source, and verification method. Give each scenario a stable ID with inputs, trigger and observable expected result. Stop asking when normal and material exceptions can be written as tests. If a decision remains open, identify impacted scenarios and continue independent work.
 
+## Human oversight for ticket analysis
+
+Keep evidence and decisions scoped to the assigned ticket. In the existing report, make each consequential assumption reviewable: show the affected scenario, its current expected outcome and what a different decision would change. Return this summary to the orchestrator for the ticket handoff. When the owner intervenes, revise the affected scenarios under their original IDs and identify which design or test expectations need reconsideration. An interview answer settles only its named decision; the orchestrator handles stage approval.
+
+Example: if an ITSM request says “process A only” and the non-A rule is already documented, focus on the missing classification. If the owner chooses manual review, record one unclassified input yielding zero automatic actions and one review item. Ask about repeated delivery only if it could change that result.
+
 ## Refine the spec with the requester
 
 1. First inspect existing requirements, relevant code and examples. Summarize the intended user outcome and identify decisions whose answers would change implementation or acceptance tests.
